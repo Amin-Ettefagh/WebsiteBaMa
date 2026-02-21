@@ -1,0 +1,11 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        NODE_IMAGE: dchat-whatsapp-node:latest
+    ports:
+      - "3022:3022"
+    environment:
+      - PORT=3022
+    restart: unless-stopped

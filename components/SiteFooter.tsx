@@ -1,0 +1,60 @@
+import Link from 'next/link';
+import { SITE_NAME, SITE_PHONE, SITE_SUPPORT_EMAIL } from '@/lib/site';
+
+const footerLinks = [
+  { href: '/about', label: '?????? ??' },
+  { href: '/contact', label: '???? ?? ??' },
+  { href: '/faq', label: '?????? ??????' },
+  { href: '/terms', label: '?????? ? ??????' }
+];
+
+const serviceLinks = [
+  { href: '/marketplace', label: '??????? ?????' },
+  { href: '/packages', label: '???? ??? ???????' },
+  { href: '/customers', label: '????? ???????' },
+  { href: '/blog', label: '??????? ????' }
+];
+
+export default function SiteFooter() {
+  return (
+    <footer className="site-footer">
+      <div className="container">
+        <div className="site-footer__grid">
+          <div>
+            <div className="site-footer__title">{SITE_NAME}</div>
+            <p className="site-footer__list">
+              ????? ? ??? ?????? ??????? ???????? ?? ????? ?? ????? ??? ? ????? ??????.
+            </p>
+          </div>
+          <div>
+            <div className="site-footer__title">?????? ????</div>
+            <ul className="site-footer__list">
+              {footerLinks.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href}>{item.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <div className="site-footer__title">?????</div>
+            <ul className="site-footer__list">
+              {serviceLinks.map((item) => (
+                <li key={item.href}>
+                  <Link href={item.href}>{item.label}</Link>
+                </li>
+              ))}
+            </ul>
+            <ul className="site-footer__list" style={{ marginTop: 12 }}>
+              <li>????: {SITE_PHONE}</li>
+              <li>?????: {SITE_SUPPORT_EMAIL}</li>
+            </ul>
+          </div>
+        </div>
+        <div className="footer-note">
+          ????? ???? ??? ?????? ????? ?? {SITE_NAME} ???.
+        </div>
+      </div>
+    </footer>
+  );
+}
