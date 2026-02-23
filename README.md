@@ -1,114 +1,124 @@
-﻿# وبسایته با ما
+# Website Bama
 
-این پروژه نسخه بازسازی شده Next.js از آرشیو HTML قدیمی شماست. تمام صفحات به صورت داینامیک رندر می‌شوند، مسیرها اصلاح شده‌اند، نام سایت به «وبسایته با ما» تغییر کرده، لوگوها با `Logo.png` جایگزین شده‌اند و تم آبی (پیش‌فرض دارک) اعمال شده است.
+A production-ready Next.js application that renders a legacy HTML archive with modern routing, branding normalization, and deployable Docker artifacts.
 
-**پورت پیش‌فرض اجرا:** `3022`
+## Why this project exists
 
-## ویژگی‌ها
-- تبدیل آرشیو HTML به رندر داینامیک در Next.js (App Router)
-- اصلاح لینک‌ها، فرم‌ها و مسیر تصاویر
-- جایگزینی خودکار نام سایت و لوگو
-- تم آبی با دارک مود پیش‌فرض و امکان سوییچ به حالت روشن
-- پشتیبانی کامل RTL و زبان فارسی
-- آماده اجرا با Docker
+The original website content is stored as static legacy HTML. This project keeps that content as the source of truth while applying runtime transformations so the final site is consistent with the new Website Bama brand.
 
-## پیش‌نیازها
-- Node.js نسخه 20 یا بالاتر
-- npm
-- Docker (اختیاری، برای اجرا با کانتینر)
+## Key capabilities
 
-## شروع سریع با Docker
-1. بیلد و اجرا:
+- Catch-all route rendering for legacy pages with Next.js App Router
+- Automatic URL and asset rewriting to local paths
+- Brand normalization from old Mihan Shop variants to Website Bama
+- Theme token overrides for a consistent visual identity
+- Docker multi-stage production build
+- CI-ready repository layout for GitHub
 
-```bash
-docker compose up --build -d
-```
+## Tech stack
 
-2. باز کردن پروژه در مرورگر:
+- Next.js 14 (App Router)
+- React 18
+- TypeScript 5
+- Node.js 20+
+- Docker / Docker Compose
 
-```text
-http://localhost:3022
-```
+## Default runtime port
 
-3. مشاهده لاگ‌ها (اختیاری):
+`3022`
 
-```bash
-docker compose logs -f
-```
-
-## اجرای محلی (بدون Docker)
-1. نصب وابستگی‌ها:
+## Quick start
 
 ```bash
 npm install
-```
-
-2. همگام‌سازی فایل‌های استاتیک (ضروری):
-
-```bash
 npm run sync:assets
-```
-
-3. اجرا در حالت توسعه:
-
-```bash
 npm run dev
 ```
 
-4. ساخت و اجرا در حالت پروداکشن:
+Open `http://localhost:3022`.
+
+## Production build
 
 ```bash
 npm run build
 npm run start
 ```
 
-## اسکریپت‌ها
-- `npm run dev`: اجرای توسعه روی پورت 3022
-- `npm run build`: بیلد پروژه
-- `npm run start`: اجرای پروداکشن روی پورت 3022
-- `npm run sync:assets`: کپی فایل‌های استاتیک قدیمی به `public/legacy`
-- `npm run sync:remote`: دانلود تصاویر خارجی (در صورت نیاز)
-- `npm run sync:all`: اجرای همزمان همگام‌سازی استاتیک و دانلود تصاویر خارجی
+## Docker
 
-## ساختار پروژه
-- `app/`: روتینگ و صفحات Next.js
-- `app/[[...slug]]/page.tsx`: رندر داینامیک صفحات قدیمی
-- `lib/legacy.ts`: منطق تبدیل HTML، اصلاح لینک‌ها و تصاویر، تم و لوگو
-- `lib/site.ts`: تنظیمات نام سایت، توضیحات و اطلاعات تماس
-- `public/legacy/`: نسخه کپی‌شده فایل‌های استاتیک قدیمی
-- `public/remote/`: تصاویر دانلودشده از منابع خارجی
-- `scripts/`: اسکریپت‌های همگام‌سازی فایل‌ها
-- `Logo.png`: لوگوی اصلی پروژه (در ریشه)
-
-## تم، رنگ و دارک مود
-- دارک مود به صورت پیش‌فرض فعال است.
-- برای حالت روشن، مقدار `data-theme` را در `app/layout.tsx` به `light` تغییر دهید.
-- رنگ‌های اصلی در `app/globals.css` تعریف شده‌اند (آبی/سفید).
-
-نمونه تغییر تم:
-
-```tsx
-<html lang="fa" dir="rtl" data-theme="light">
-```
-
-## لوگو و نام سایت
-- فایل لوگو باید در ریشه پروژه با نام `Logo.png` قرار داشته باشد.
-- اسکریپت `sync:assets` این لوگو را به `public/Logo.png` کپی می‌کند.
-- نام سایت و اطلاعات تماس در `lib/site.ts` قابل تغییر است.
-
-## رفع مشکل تصاویر بریک
-اگر بعضی تصاویر از منابع خارجی لود نمی‌شوند:
+Build and run with Docker Compose:
 
 ```bash
-npm run sync:remote
+docker compose up --build -d
 ```
 
-یا برای اجرای کامل:
+Open `http://localhost:3022`.
+
+Stop:
 
 ```bash
-npm run sync:all
+docker compose down
 ```
 
-## مستندات تکمیلی
-- معماری و منطق رندر: `docs/ARCHITECTURE.md`
-- راهنمای دیپلوی و Docker: `docs/DEPLOYMENT.md`
+## Scripts
+
+- `npm run dev`: start development server on port `3022`
+- `npm run build`: create production build
+- `npm run start`: run production server on port `3022`
+- `npm run lint`: run lint checks
+- `npm run sync:assets`: copy legacy assets into `public/legacy`
+- `npm run sync:remote`: download remote legacy assets into `public/remote`
+- `npm run sync:all`: run both sync jobs
+
+## Environment variables
+
+Use `.env.example` as reference.
+
+- `PORT`: server port (default: `3022`)
+
+## Project structure
+
+```text
+.
++- app/
+�  +- [[...slug]]/page.tsx       # Catch-all page renderer
+�  +- api/contact/route.ts       # Contact endpoint (JSONL storage)
+�  +- globals.css                # Global theme and compatibility styles
+�  +- layout.tsx                 # Metadata and legacy stylesheet preload
++- components/                   # Shared UI/client helpers
++- docs/                         # Architecture, config, development, deployment
++- legacy/                       # Raw archived HTML sources
++- lib/
+�  +- legacy.ts                  # Transformation pipeline
+�  +- site.ts                    # Branding/domain/site constants
++- public/
+�  +- legacy/                    # Synced static assets from legacy archive
+�  +- remote/                    # Downloaded external assets
++- scripts/                      # Asset sync and normalization scripts
++- Dockerfile
++- docker-compose.yml
++- README.md
+```
+
+## GitHub readiness checklist
+
+- TypeScript strict mode enabled
+- Dockerfile and Compose included
+- CI workflow included in `.github/workflows/ci.yml`
+- English docs in `README.md` and `docs/*`
+- Consistent branding/domain constants in `lib/site.ts`
+
+## Contact form storage
+
+Submissions are appended to `data/contact-requests.jsonl` as JSON Lines.
+
+## Additional documentation
+
+- `docs/ARCHITECTURE.md`
+- `docs/CONFIGURATION.md`
+- `docs/DEVELOPMENT.md`
+- `docs/DEPLOYMENT.md`
+
+## Contributing
+
+See `CONTRIBUTING.md`.

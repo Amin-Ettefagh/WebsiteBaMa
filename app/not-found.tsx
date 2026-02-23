@@ -1,17 +1,12 @@
 import Link from 'next/link';
+import { SITE_NAME } from '@/lib/site';
 
 export default function NotFound() {
   return (
     <div>
-      <h1>
-        {'\u0635\u0641\u062d\u0647 \u0645\u0648\u0631\u062f \u0646\u0638\u0631 \u067e\u06cc\u062f\u0627 \u0646\u0634\u062f'}
-      </h1>
-      <p>
-        {'\u0645\u0633\u06cc\u0631 \u062f\u0631\u062e\u0648\u0627\u0633\u062a \u0634\u062f\u0647 \u062f\u0631 \u0648\u0628\u0633\u0627\u06cc\u062a\u0647 \u0628\u0627 \u0645\u0627 \u0645\u0648\u062c\u0648\u062f \u0646\u06cc\u0633\u062a.'}
-      </p>
-      <Link href="/">
-        {'\u0628\u0627\u0632\u06af\u0634\u062a \u0628\u0647 \u0635\u0641\u062d\u0647 \u0627\u0635\u0644\u06cc'}
-      </Link>
+      <h1>Page not found</h1>
+      <p>The page you requested does not exist on {SITE_NAME}.</p>
+      <Link href="/">Back to home</Link>
     </div>
   );
 }

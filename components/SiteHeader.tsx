@@ -6,13 +6,13 @@ import clsx from 'clsx';
 import { SITE_NAME } from '@/lib/site';
 
 const navItems = [
-  { href: '/', label: '????' },
-  { href: '/packages', label: '????? ??' },
-  { href: '/customers', label: '????? ???????' },
-  { href: '/marketplace', label: '???????' },
-  { href: '/blog', label: '????' },
-  { href: '/about', label: '?????? ??' },
-  { href: '/contact', label: '???? ?? ??' }
+  { href: '/', label: 'Home' },
+  { href: '/packages', label: 'Packages' },
+  { href: '/customers', label: 'Customers' },
+  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/blog', label: 'Blog' },
+  { href: '/about', label: 'About us' },
+  { href: '/contact', label: 'Contact' }
 ];
 
 export default function SiteHeader() {
@@ -29,21 +29,21 @@ export default function SiteHeader() {
             <span className="brand__title">{SITE_NAME}</span>
           </div>
 
-          <nav className="nav" aria-label="?????? ????">
+          <nav className="nav" aria-label="Primary navigation">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} className="nav__link">
                 {item.label}
               </Link>
             ))}
             <Link href="/panel" className="nav__cta">
-              ???? | ??? ???
+              Client panel
             </Link>
           </nav>
 
           <button
             type="button"
             className="mobile-toggle"
-            aria-label="??? ???? ???"
+            aria-label="Toggle menu"
             onClick={() => setOpen((prev) => !prev)}
           >
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -69,7 +69,7 @@ export default function SiteHeader() {
             </Link>
           ))}
           <Link href="/panel" className="nav__cta" onClick={() => setOpen(false)}>
-            ???? | ??? ???
+            Client panel
           </Link>
         </div>
       </div>

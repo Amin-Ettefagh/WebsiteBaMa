@@ -3,69 +3,158 @@ const path = require('path');
 const crypto = require('crypto');
 
 const root = process.cwd();
-const sources = [
-  path.join(root, 'mihanshop.com'),
-  path.join(root, 'panel.mihanshop.com')
-];
+const legacyRoot = path.join(root, 'legacy');
+const DOMAIN_ALIASES = {
+  'websithebama.com': 'websithebama.com',
+  'panel.websithebama.com': 'panel.websithebama.com',
+  'api.websithebama.com': 'api.websithebama.com',
+  'cdn.websithebama.com': 'cdn.websithebama.com',
+  'mihanshop.com': 'websithebama.com',
+  'panel.mihanshop.com': 'panel.websithebama.com',
+  'api.mihanshop.com': 'api.websithebama.com',
+  'cdn.mihanshop.com': 'cdn.websithebama.com'
+};
 
-const allowedHosts = new Set([
-  'mihanshop.com',
-  'cdn.mihanshop.com',
-  'api.mihanshop.com',
-  'panel.mihanshop.com'
+const CANONICAL_HOSTS = new Set([
+  'websithebama.com',
+  'panel.websithebama.com',
+  'api.websithebama.com',
+  'cdn.websithebama.com'
 ]);
 
-const imageExt = /\.(png|jpg|jpeg|webp|svg)(\?.*)?$/i;
+const sourceRoots = [
+  path.join(legacyRoot, 'websithebama.com'),
+  path.join(legacyRoot, 'panel.websithebama.com'),
+  path.join(legacyRoot, 'mihanshop.com'),
+  path.join(legacyRoot, 'panel.mihanshop.com')
+];
 
+const TEXT_EXTENSIONS = new Set([
+  '.html',
+  '.htm',
+  '.css',
+  '.js',
+  '.json',
+  '.txt',
+  '.xml',
+  '.svg'
+]);
+
+const imageExt = /\.(png|jpg|jpeg|webp|svg|gif|avif)(\?.*)?$/i;
 const urlRegex = /https?:\/\/[^\s"'<>]+/g;
 
-const collectUrls = () => {
-  const urls = new Set();
-  for (const base of sources) {
-    if (!fs.existsSync(base)) continue;
-    const files = fs.readdirSync(base, { recursive: true });
-    for (const entry of files) {
-      const full = path.join(base, entry);
-      if (!fs.statSync(full).isFile()) continue;
-      const text = fs.readFileSync(full, 'utf8');
-      const matches = text.match(urlRegex);
-      if (!matches) continue;
-      for (const url of matches) {
-        urls.add(url);
+const normalizeHost = (host) => DOMAIN_ALIASES[host] || host;
+const isAllowedHost = (host) => CANONICAL_HOSTS.has(normalizeHost(host));
+
+const walkFiles = (startDir) => {
+  const stack = [startDir];
+  const files = [];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+      if (entry.isFile()) {
+        files.push(fullPath);
       }
     }
   }
+
+  return files;
+};
+
+const collectUrls = () => {
+  const urls = new Set();
+
+  for (const base of sourceRoots) {
+    if (!fs.existsSync(base)) continue;
+
+    const files = walkFiles(base);
+    for (const filePath of files) {
+      const ext = path.extname(filePath).toLowerCase();
+      if (!TEXT_EXTENSIONS.has(ext)) continue;
+
+      let text = '';
+      try {
+        text = fs.readFileSync(filePath, 'utf8');
+      } catch {
+        continue;
+      }
+
+      const matches = text.match(urlRegex);
+      if (!matches) continue;
+      for (const value of matches) {
+        urls.add(value);
+      }
+    }
+  }
+
   return Array.from(urls);
 };
 
-const toLocalPath = (urlObj) => {
-  const safePath = urlObj.pathname.replace(/^\/+/, '');
-  let localPath = path.join(root, 'public', 'remote', urlObj.hostname, safePath);
-  if (urlObj.search) {
-    const hash = crypto.createHash('md5').update(urlObj.search).digest('hex');
+const toLocalPath = (host, pathname, search) => {
+  const safePath = pathname.replace(/^\/+/, '');
+  let localPath = path.join(root, 'public', 'remote', host, safePath);
+  if (search) {
+    const hash = crypto.createHash('md5').update(search).digest('hex');
     localPath = `${localPath}__${hash}`;
   }
   return localPath;
 };
 
+const getCandidateUrls = (urlObj, normalizedHost) => {
+  const candidates = [urlObj.toString()];
+  if (urlObj.hostname !== normalizedHost) {
+    const normalizedUrl = new URL(urlObj.toString());
+    normalizedUrl.hostname = normalizedHost;
+    candidates.push(normalizedUrl.toString());
+  }
+  return candidates;
+};
+
 const download = async (url) => {
   const urlObj = new URL(url);
-  if (!allowedHosts.has(urlObj.hostname)) return;
+  const normalizedHost = normalizeHost(urlObj.hostname);
+
+  if (!isAllowedHost(urlObj.hostname)) return;
   if (!imageExt.test(urlObj.pathname)) return;
 
-  const localPath = toLocalPath(urlObj);
+  const localPath = toLocalPath(normalizedHost, urlObj.pathname, urlObj.search);
   if (fs.existsSync(localPath)) return;
 
   await fs.promises.mkdir(path.dirname(localPath), { recursive: true });
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.warn(`Skip ${url} -> ${res.status}`);
+  const candidates = getCandidateUrls(urlObj, normalizedHost);
+  let response = null;
+  let downloadedFrom = '';
+
+  for (const candidate of candidates) {
+    try {
+      const current = await fetch(candidate);
+      if (current.ok) {
+        response = current;
+        downloadedFrom = candidate;
+        break;
+      }
+      console.warn(`Skip ${candidate} -> ${current.status}`);
+    } catch {
+      // Keep trying remaining candidates.
+    }
+  }
+
+  if (!response) {
+    console.warn(`Failed to download ${url}`);
     return;
   }
-  const arrayBuffer = await res.arrayBuffer();
+
+  const arrayBuffer = await response.arrayBuffer();
   await fs.promises.writeFile(localPath, Buffer.from(arrayBuffer));
-  console.log(`Downloaded ${url}`);
+  console.log(`Downloaded ${downloadedFrom} -> ${localPath}`);
 };
 
 const run = async () => {
@@ -73,7 +162,7 @@ const run = async () => {
   const targets = urls.filter((url) => {
     try {
       const u = new URL(url);
-      return allowedHosts.has(u.hostname) && imageExt.test(u.pathname);
+      return isAllowedHost(u.hostname) && imageExt.test(u.pathname);
     } catch {
       return false;
     }

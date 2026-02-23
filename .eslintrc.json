@@ -1,0 +1,10 @@
+{
+  "root": true,
+  "extends": ["next/core-web-vitals"],
+  "ignorePatterns": [
+    "legacy/**",
+    "public/legacy/**",
+    "public/remote/**",
+    "node_modules/**"
+  ]
+}

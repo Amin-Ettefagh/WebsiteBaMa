@@ -2,11 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import { cache } from 'react';
 import * as cheerio from 'cheerio';
-import { SITE_NAME } from './site';
+import { DOMAINS, LEGACY_HOST_ALIASES, SITE_NAME, SITE_NAME_FA } from './site';
 
-const MIHAN_ROOT = path.join(process.cwd(), 'mihanshop.com');
-const PANEL_ROOT = path.join(process.cwd(), 'panel.mihanshop.com');
+// Keep raw HTML archives in a dedicated folder to avoid cluttering the repo root.
+const LEGACY_ROOT = path.join(process.cwd(), 'legacy');
+const PRIMARY_ROOT = path.join(LEGACY_ROOT, DOMAINS.primary);
+const PANEL_ROOT = path.join(LEGACY_ROOT, DOMAINS.panel);
 
+// Legacy brand variants found in the HTML archive.
 const PERSIAN_NAME_VARIANTS = [
   '\u0645\u06cc\u0647\u0646 \u0634\u0627\u067e',
   '\u0645\u06cc\u0647\u0646\u200c\u0634\u0627\u067e',
@@ -24,7 +27,7 @@ export type LegacyPage = {
 
 type LegacyFile = {
   filePath: string;
-  siteKey: 'mihanshop' | 'panel';
+  siteKey: 'main' | 'panel';
   pageDir: string;
   routeKey: string;
 };
@@ -47,19 +50,27 @@ const sanitizeRouteKey = (value: string) =>
     .replace(/\/$/, '')
     .replace(/\s+/g, '-');
 
+const normalizeLegacyHost = (host: string) => LEGACY_HOST_ALIASES[host] ?? host;
+
+const isLegacyHost = (host: string) => {
+  const normalized = normalizeLegacyHost(host);
+  return normalized === DOMAINS.primary || normalized.endsWith(`.${DOMAINS.primary}`);
+};
+
+// Map Next.js routes to the closest matching legacy HTML file.
 const resolveLegacyFile = (segments?: string[]): LegacyFile | null => {
   const safeSegments = segments ?? [];
   if (safeSegments.length === 0) {
     return {
-      filePath: path.join(MIHAN_ROOT, 'index.html'),
-      siteKey: 'mihanshop',
+      filePath: path.join(PRIMARY_ROOT, 'index.html'),
+      siteKey: 'main',
       pageDir: '',
       routeKey: 'home'
     };
   }
 
-  let siteRoot = MIHAN_ROOT;
-  let siteKey: LegacyFile['siteKey'] = 'mihanshop';
+  let siteRoot = PRIMARY_ROOT;
+  let siteKey: LegacyFile['siteKey'] = 'main';
   let relativeSegments = safeSegments;
 
   if (safeSegments[0] === 'panel') {
@@ -138,6 +149,40 @@ const splitQuery = (value: string) => {
   return { pathPart, query: query ? `?${query}` : '' };
 };
 
+const rewriteExternalBrandUrl = (rawUrl: string) => {
+  if (!rawUrl || !isExternal(rawUrl)) return rawUrl;
+
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.toLowerCase();
+    const pathname = url.pathname;
+
+    if (host.includes('instagram.com') && /^\/mihanshopcom\/?$/i.test(pathname)) {
+      url.pathname = '/websithebama';
+    }
+
+    if (host.includes('youtube.com') && /^\/@mihanshop\/?$/i.test(pathname)) {
+      url.pathname = '/@WebsiteBama';
+    }
+
+    if (
+      host.includes('linkedin.com') &&
+      /^\/company\/mihanshop\/?$/i.test(pathname)
+    ) {
+      url.pathname = '/company/websithebama';
+    }
+
+    if (host.includes('aparat.com') && /^\/mihanshopcom\/?$/i.test(pathname)) {
+      url.pathname = '/WebsiteBama';
+    }
+
+    return url.toString();
+  } catch {
+    return rawUrl;
+  }
+};
+
+// Convert legacy links to local Next.js routes when possible.
 const toLocalRoute = (rawUrl: string, pageDir: string) => {
   if (!rawUrl) return rawUrl;
   const trimmed = rawUrl.trim();
@@ -153,7 +198,7 @@ const toLocalRoute = (rawUrl: string, pageDir: string) => {
   if (isExternal(trimmed)) {
     try {
       const url = new URL(trimmed);
-      if (url.hostname.endsWith('mihanshop.com')) {
+      if (isLegacyHost(url.hostname)) {
         const cleanPath = stripHtmlExtension(url.pathname);
         return `/${cleanPath.replace(/^\//, '')}${url.search}${url.hash}`;
       }
@@ -196,6 +241,7 @@ const ensureRemoteAsset = (host: string, pathname: string, fallback: string) => 
   return fallback;
 };
 
+// Normalize legacy asset URLs to local /legacy or /remote paths.
 const toLocalAsset = (rawUrl: string, pageDir: string, siteKey: LegacyFile['siteKey']) => {
   if (!rawUrl) return rawUrl;
   let trimmed = rawUrl.trim();
@@ -216,28 +262,45 @@ const toLocalAsset = (rawUrl: string, pageDir: string, siteKey: LegacyFile['site
   if (isExternal(trimmed)) {
     try {
       const url = new URL(trimmed);
-      if (url.hostname === 'api.mihanshop.com') {
+      const normalizedHost = normalizeLegacyHost(url.hostname);
+
+      if (normalizedHost === DOMAINS.api) {
         return ensureLocalAsset(
-          `/legacy/api.mihanshop.com${url.pathname}`,
+          `/legacy/${DOMAINS.api}${url.pathname}`,
           normalizeUrl(trimmed)
         );
       }
-      if (url.hostname === 'panel.mihanshop.com') {
+      if (normalizedHost === DOMAINS.panel) {
         return ensureLocalAsset(
-          `/legacy/panel.mihanshop.com${url.pathname}`,
+          `/legacy/${DOMAINS.panel}${url.pathname}`,
           normalizeUrl(trimmed)
         );
       }
-      if (url.hostname.endsWith('mihanshop.com')) {
+      if (normalizedHost === DOMAINS.primary) {
         const localCandidate = ensureLocalAsset(
-          `/legacy/mihanshop.com${url.pathname}`,
+          `/legacy/${DOMAINS.primary}${url.pathname}`,
           ''
         );
         if (localCandidate) return localCandidate;
-        return ensureRemoteAsset(url.hostname, url.pathname, normalizeUrl(trimmed));
+        return ensureRemoteAsset(
+          normalizedHost,
+          url.pathname,
+          normalizeUrl(trimmed)
+        );
       }
-      if (url.hostname.endsWith('cdn.mihanshop.com')) {
-        return ensureRemoteAsset(url.hostname, url.pathname, normalizeUrl(trimmed));
+      if (normalizedHost === DOMAINS.cdn) {
+        return ensureRemoteAsset(
+          normalizedHost,
+          url.pathname,
+          normalizeUrl(trimmed)
+        );
+      }
+      if (isLegacyHost(normalizedHost)) {
+        return ensureRemoteAsset(
+          normalizedHost,
+          url.pathname,
+          normalizeUrl(trimmed)
+        );
       }
       return normalizeUrl(trimmed);
     } catch {
@@ -246,7 +309,7 @@ const toLocalAsset = (rawUrl: string, pageDir: string, siteKey: LegacyFile['site
   }
 
   if (trimmed.startsWith('/')) {
-    const base = siteKey === 'panel' ? 'panel.mihanshop.com' : 'mihanshop.com';
+    const base = siteKey === 'panel' ? DOMAINS.panel : DOMAINS.primary;
     return ensureLocalAsset(`/legacy/${base}${trimmed}`);
   }
 
@@ -256,17 +319,17 @@ const toLocalAsset = (rawUrl: string, pageDir: string, siteKey: LegacyFile['site
     .replace(/^\.\//, '')
     .replace(/^(\.\.\/)+/, '');
 
-  if (normalized.startsWith('api.mihanshop.com/')) {
+  if (normalized.startsWith(`${DOMAINS.api}/`)) {
     return ensureLocalAsset(`/legacy/${normalized}`);
   }
-  if (normalized.startsWith('panel.mihanshop.com/')) {
+  if (normalized.startsWith(`${DOMAINS.panel}/`)) {
     return ensureLocalAsset(`/legacy/${normalized}`);
   }
-  if (normalized.startsWith('mihanshop.com/')) {
+  if (normalized.startsWith(`${DOMAINS.primary}/`)) {
     return ensureLocalAsset(`/legacy/${normalized}`);
   }
 
-  const base = siteKey === 'panel' ? 'panel.mihanshop.com' : 'mihanshop.com';
+  const base = siteKey === 'panel' ? DOMAINS.panel : DOMAINS.primary;
   return ensureLocalAsset(`/legacy/${base}/${normalized}`);
 };
 
@@ -274,14 +337,24 @@ const replaceSiteName = (value: string) => {
   if (!value) return value;
   let updated = value;
   PERSIAN_NAME_VARIANTS.forEach((variant) => {
-    updated = updated.split(variant).join(SITE_NAME);
+    updated = updated.split(variant).join(SITE_NAME_FA);
   });
+  updated = updated.replace(/\u0645\u06cc\u0647\u0646\s*\u0634\u0627\u067e/gi, SITE_NAME_FA);
+  updated = updated.replace(/mihanshopcom/gi, 'websithebama');
+  updated = updated.replace(/MihanShopCom/gi, 'WebsiteBama');
+  updated = updated.replace(/TheMihanShop/gi, 'TheWebsiteBama');
   updated = updated.replace(/mihan\s*shop/gi, SITE_NAME);
   updated = updated.replace(/mihan-shop/gi, SITE_NAME);
   updated = updated.replace(/mihanshop/gi, SITE_NAME);
+  updated = updated.replace(/MihanShop/gi, SITE_NAME);
+  updated = updated.replace(/panel\.mihanshop\.com/gi, DOMAINS.panel);
+  updated = updated.replace(/api\.mihanshop\.com/gi, DOMAINS.api);
+  updated = updated.replace(/cdn\.mihanshop\.com/gi, DOMAINS.cdn);
+  updated = updated.replace(/mihanshop\.com/gi, DOMAINS.primary);
   return updated;
 };
 
+// Replace legacy brand names inside text nodes and common attributes.
 const updateTextNodes = ($: cheerio.CheerioAPI) => {
   const root = $.root();
   const walk = (node: any) => {
@@ -320,7 +393,10 @@ const isLogoAsset = (src?: string, alt?: string, title?: string, className?: str
 
   const srcLooksLikeLogo =
     looksLikeLogoText(srcText) ||
-    (srcText.includes('mihanshop-') && srcText.endsWith('.svg'));
+    ((srcText.includes('mihanshop-') ||
+      srcText.includes('websithebama-') ||
+      srcText.includes('websitebama-')) &&
+      srcText.endsWith('.svg'));
   const classLooksLikeLogo =
     looksLikeLogoText(classText) ||
     classText.includes('header_top-logo') ||
@@ -336,7 +412,10 @@ const isLogoUrl = (value?: string) => {
   const text = (value ?? '').toLowerCase();
   return (
     looksLikeLogoText(text) ||
-    (text.includes('mihanshop-') && text.endsWith('.svg'))
+    ((text.includes('mihanshop-') ||
+      text.includes('websithebama-') ||
+      text.includes('websitebama-')) &&
+      text.endsWith('.svg'))
   );
 };
 
@@ -411,6 +490,7 @@ const updateColorAttributes = ($: cheerio.CheerioAPI, root: cheerio.Cheerio<any>
   });
 };
 
+// Main transformation pipeline for legacy HTML.
 const transformLegacyHtml = (
   html: string,
   pageDir: string,
@@ -562,7 +642,8 @@ const transformLegacyHtml = (
     const $anchor = $(anchor);
     const href = $anchor.attr('href');
     if (href) {
-      $anchor.attr('href', toLocalRoute(href, pageDir));
+      const rewrittenHref = rewriteExternalBrandUrl(href);
+      $anchor.attr('href', toLocalRoute(rewrittenHref, pageDir));
     }
   });
 
@@ -581,12 +662,12 @@ const transformLegacyHtml = (
   return { html: `${svgDefs}${bodyHtml}`, title, description };
 };
 
+// Cache page rendering to avoid re-reading large HTML files on every request.
 export const getLegacyPage = cache(async (segments?: string[]): Promise<LegacyPage> => {
   const legacyFile = resolveLegacyFile(segments);
   if (!legacyFile) {
     return {
-      html:
-        '<div>\u0635\u0641\u062d\u0647 \u0645\u0648\u0631\u062f \u0646\u0638\u0631 \u067e\u06cc\u062f\u0627 \u0646\u0634\u062f.</div>',
+      html: '<div>We could not find the page you requested.</div>',
       title: SITE_NAME,
       description: '',
       routeKey: 'not-found'

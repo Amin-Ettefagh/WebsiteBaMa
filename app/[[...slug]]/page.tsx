@@ -10,8 +10,7 @@ export async function generateMetadata({ params }: PageProps) {
   const slug = params?.slug ?? [];
   const page = await getLegacyPage(slug);
   if (page.routeKey === 'not-found') {
-    const notFoundTitle =
-      '\u0635\u0641\u062d\u0647 \u0645\u0648\u0631\u062f \u0646\u0638\u0631';
+    const notFoundTitle = 'Page not found';
     return { title: `${notFoundTitle} | ${SITE_NAME}` };
   }
   return {

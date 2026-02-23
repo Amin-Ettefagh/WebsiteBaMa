@@ -2,15 +2,22 @@
   "name": "websithe-bama",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev -p 3022",
     "prebuild": "node scripts/sync-legacy-assets.js",
     "build": "next build",
     "start": "next start -p 3022",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run build",
     "sync:assets": "node scripts/sync-legacy-assets.js",
     "sync:remote": "node scripts/sync-remote-assets.js",
-    "sync:all": "node scripts/sync-legacy-assets.js && node scripts/sync-remote-assets.js"
+    "sync:all": "node scripts/sync-legacy-assets.js && node scripts/sync-remote-assets.js",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "cheerio": "1.0.0-rc.12",

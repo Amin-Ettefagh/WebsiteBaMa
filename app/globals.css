@@ -1,5 +1,5 @@
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   --theme-blue: #2d6fda;
   --theme-blue-strong: #1d56b8;
   --theme-blue-soft: #9fc6ff;
@@ -32,7 +32,7 @@ html[data-theme='light'] {
   font-family: "YekanPlus";
   font-style: normal;
   font-weight: 400;
-  src: url("/legacy/mihanshop.com/static/fonts/yekanPlus/YEKANPLUS.woff2")
+  src: url("/legacy/websithebama.com/static/fonts/yekanPlus/YEKANPLUS.woff2")
       format("woff2");
   font-display: swap;
 }

@@ -26,44 +26,44 @@ export default function ContactForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.message || '????? ??? ?? ??? ????? ??.');
+        throw new Error(data?.message || 'Something went wrong. Please try again.');
       }
 
       setStatus('success');
-      setMessage(data?.message || '??????? ??? ??? ??.');
+      setMessage(data?.message || 'Thanks! Your request has been received.');
       form.reset();
     } catch (error) {
       setStatus('error');
       setMessage(
-        error instanceof Error ? error.message : '????? ??? ?? ??? ????? ??.'
+        error instanceof Error ? error.message : 'Something went wrong. Please try again.'
       );
     }
   };
 
   return (
     <section className="contact-panel">
-      <div className="contact-panel__title">??????? ?????? ? ??? ??????</div>
+      <div className="contact-panel__title">Request a Consultation</div>
       <p className="status">
-        ??? ??? ?? ????? ???? ?? ??? ??????? ?? ?? ?? ??? ???? ?????.
+        Tell us about your project and we will get back to you within one business day.
       </p>
       <form className="contact-form" onSubmit={handleSubmit}>
         <div className="contact-form__grid">
           <div className="field">
-            <label htmlFor="name">??? ? ??? ????????</label>
-            <input id="name" name="name" placeholder="????: ???? ?????" required />
+            <label htmlFor="name">Full name</label>
+            <input id="name" name="name" placeholder="e.g. Jordan Smith" required />
           </div>
           <div className="field">
-            <label htmlFor="phone">????? ????</label>
+            <label htmlFor="phone">Phone number</label>
             <input
               id="phone"
               name="phone"
               type="tel"
-              placeholder="????: ???????????"
+              placeholder="e.g. +1 555 000 0000"
               required
             />
           </div>
           <div className="field">
-            <label htmlFor="email">?????</label>
+            <label htmlFor="email">Email</label>
             <input
               id="email"
               name="email"
@@ -72,23 +72,23 @@ export default function ContactForm() {
             />
           </div>
           <div className="field">
-            <label htmlFor="topic">?????</label>
-            <input id="topic" name="topic" placeholder="?????? ???????" />
+            <label htmlFor="topic">Topic</label>
+            <input id="topic" name="topic" placeholder="Website redesign" />
           </div>
         </div>
         <div className="field">
-          <label htmlFor="message">???? ???</label>
+          <label htmlFor="message">Project details</label>
           <textarea
             id="message"
             name="message"
             rows={4}
-            placeholder="???? ??? ?? ????? ????..."
+            placeholder="Share your goals, timeline, and budget..."
             required
           />
         </div>
         <div className="contact-form__actions">
           <button className="button" type="submit" disabled={status === 'loading'}>
-            {status === 'loading' ? '?? ??? ?????...' : '????? ???????'}
+            {status === 'loading' ? 'Sending...' : 'Send request'}
           </button>
           {message ? <span className="status">{message}</span> : null}
         </div>

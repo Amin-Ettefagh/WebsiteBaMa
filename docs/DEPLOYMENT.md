@@ -1,32 +1,60 @@
-﻿# راهنمای دیپلوی و Docker
+# Deployment
 
-## اجرای سریع با Docker Compose
+## Docker Compose (recommended)
+
 ```bash
 docker compose up --build -d
 ```
 
-پروژه روی پورت `3022` بالا می‌آید:
+Application URL:
 
-```text
-http://localhost:3022
-```
+`http://localhost:3022`
 
-## تغییر پورت
-- در `docker-compose.yml` مقدار پورت را تغییر دهید.
-- در صورت اجرای محلی بدون Docker نیز پورت از طریق اسکریپت‌ها قابل تغییر است.
-
-## ساخت ایمیج و اجرای دستی
-```bash
-docker build -t websithebama .
-```
+Stop and remove containers:
 
 ```bash
-docker run -d --name websithebama -p 3022:3022 websithebama
+docker compose down
 ```
 
-## متغیرهای محیطی
-- `PORT`: پورت اجرای سرور (پیش‌فرض 3022)
+## Manual Docker build and run
 
-## عیب‌یابی
-- اگر پورت اشغال است، مقدار پورت را در `docker-compose.yml` تغییر دهید.
-- در صورت بریک بودن تصاویر خارجی، `npm run sync:remote` را اجرا کنید.
+```bash
+docker build -t websitebama .
+```
+
+```bash
+docker run -d --name websitebama -p 3022:3022 websitebama
+```
+
+## GitHub CI
+
+A CI workflow is available at `.github/workflows/ci.yml`.
+It runs:
+
+1. Dependency install
+2. Legacy asset sync
+3. Lint
+4. Production build
+5. Docker image build check
+
+## Persistent contact data
+
+To persist contact submissions outside the container:
+
+```bash
+docker run -d --name websitebama -p 3022:3022 -v ${PWD}/data:/app/data websitebama
+```
+
+## Pre-deploy checklist
+
+- `npm run sync:assets`
+- `npm run lint`
+- `npm run build`
+- `docker compose up --build -d`
+- Open `http://localhost:3022` and verify key pages
+
+## Troubleshooting
+
+- Port in use: update port mapping in `docker-compose.yml`.
+- Missing images: run `npm run sync:remote`, then rebuild.
+- Missing legacy CSS/JS: run `npm run sync:assets`, then rebuild.

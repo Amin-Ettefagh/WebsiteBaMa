@@ -1,11 +1,12 @@
 services:
   web:
+    container_name: websitebama
     build:
       context: .
       args:
-        NODE_IMAGE: dchat-whatsapp-node:latest
+        NODE_IMAGE: node:20-alpine
     ports:
       - "3022:3022"
     environment:
-      - PORT=3022
+      PORT: ${PORT:-3022}
     restart: unless-stopped

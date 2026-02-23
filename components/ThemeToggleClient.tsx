@@ -11,7 +11,10 @@ const getStoredTheme = (): ThemeMode => {
   if (typeof window === 'undefined') return DEFAULT_THEME;
   try {
     const stored = window.localStorage.getItem(THEME_KEY);
-    return stored === 'light' ? 'light' : 'dark';
+    if (stored === 'light' || stored === 'dark') {
+      return stored;
+    }
+    return DEFAULT_THEME;
   } catch {
     return DEFAULT_THEME;
   }
@@ -29,8 +32,8 @@ const applyTheme = (theme: ThemeMode) => {
 
   const labelText =
     theme === 'dark'
-      ? '\u062d\u0627\u0644\u062a \u0631\u0648\u0634\u0646'
-      : '\u062d\u0627\u0644\u062a \u062a\u0627\u0631\u06cc\u06a9';
+      ? 'Light mode'
+      : 'Dark mode';
   const toggles = root.querySelectorAll<HTMLElement>('[data-theme-toggle]');
   toggles.forEach((toggle) => {
     toggle.setAttribute('data-theme', theme);
@@ -49,12 +52,13 @@ const createToggle = (compact: boolean) => {
   button.setAttribute('data-theme-toggle', 'true');
   button.setAttribute(
     'aria-label',
-    '\u062a\u063a\u06cc\u06cc\u0631 \u062d\u0627\u0644\u062a \u0646\u0645\u0627\u06cc\u0634'
+    'Toggle theme'
   );
   button.innerHTML = '<span class="theme-toggle__dot"></span><span class="theme-toggle__label"></span>';
   return button;
 };
 
+// The legacy HTML does not include a theme toggle, so we inject one client-side.
 const insertToggleButtons = () => {
   const header = document.querySelector('header#header') || document.querySelector('header');
   if (!header) return;

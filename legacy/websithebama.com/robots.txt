@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://websithebama.com/sitemap.xml

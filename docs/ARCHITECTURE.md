@@ -1,25 +1,45 @@
-﻿# معماری پروژه
+# Architecture
 
-این پروژه آرشیو HTML قدیمی را به صورت داینامیک در Next.js رندر می‌کند. هسته رندر در فایل‌های زیر پیاده شده است:
+## Overview
 
-## جریان رندر صفحات
-1. هر مسیر به `app/[[...slug]]/page.tsx` می‌رسد.
-2. تابع `getLegacyPage` در `lib/legacy.ts` فایل HTML متناظر را از آرشیو می‌خواند.
-3. `transformLegacyHtml` عملیات زیر را انجام می‌دهد:
-- اصلاح لینک‌ها و فرم‌ها برای مسیرهای داخلی
-- تبدیل مسیر تصاویر به `public/legacy` یا `public/remote`
-- جایگزینی نام سایت با «وبسایته با ما» در متن‌ها و متادیتا
-- جایگزینی لوگوها با `/Logo.png`
-- اعمال رنگ‌های تم آبی در استایل‌ها و SVGها
+This project serves a legacy Website Bama archive through a modern Next.js runtime.
+The server reads raw HTML files from `legacy/`, transforms them, and returns clean output through App Router pages.
 
-## مدیریت فایل‌های استاتیک
-- فایل‌های قدیمی در `public/legacy` ذخیره می‌شوند.
-- تصاویر خارجی در صورت نیاز با `scripts/sync-remote-assets.js` به `public/remote` دانلود می‌شوند.
+## Runtime flow
 
-## تم و حالت روشن/تاریک
-- متغیرهای رنگی در `app/globals.css` تعریف شده‌اند.
-- مقدار `data-theme` روی `html` تعیین می‌کند که تم روشن یا تاریک فعال باشد.
+1. `app/[[...slug]]/page.tsx` captures all routes.
+2. `getLegacyPage` in `lib/legacy.ts` resolves the best matching source HTML file.
+3. `transformLegacyHtml` normalizes links, assets, metadata, colors, and branding.
+4. The transformed HTML is injected into the response.
 
-## توسعه‌پذیری
-- برای اضافه کردن منبع جدید فایل، مسیرها را در `lib/legacy.ts` و اسکریپت‌های `scripts/` توسعه دهید.
-- برای تغییر رنگ‌ها، فقط متغیرهای CSS را بروزرسانی کنید.
+## Core modules
+
+- `lib/site.ts`
+  - Centralized site metadata
+  - Canonical domain configuration
+  - Legacy host alias mapping
+  - Shared paths for legacy stylesheet preload
+
+- `lib/legacy.ts`
+  - Route-to-file resolution
+  - Host/path normalization
+  - Asset local fallback logic (`public/legacy`, `public/remote`)
+  - Brand replacement for legacy variants
+  - Theme/color adaptation
+
+- `scripts/sync-legacy-assets.js`
+  - Copies required static directories from `legacy/` to `public/legacy/`
+  - Supports both old and new domain source folders
+
+- `scripts/sync-remote-assets.js`
+  - Scans legacy text files for remote image URLs
+  - Downloads and mirrors them in `public/remote/`
+
+## Data handling
+
+- Contact submissions are stored in `data/contact-requests.jsonl`.
+- Each line is one JSON object with a timestamp.
+
+## Caching strategy
+
+`getLegacyPage` is wrapped with React `cache()` to reduce repeated disk reads and HTML parsing overhead.
